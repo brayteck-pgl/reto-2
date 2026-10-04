@@ -81,3 +81,147 @@ function ranking() {
     .map((nombre, i) => ({ nombre, promedio: promedioAlumno(i) }))
     .sort((a, b) => b.promedio - a.promedio);
 }
+
+/* ---------- 4. Presentación ---------- */
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => n.toFixed(2);
+
+function crear(tag, texto, clase) {
+  const el = document.createElement(tag);
+  if (texto !== undefined) el.textContent = texto;
+  if (clase) el.className = clase;
+  return el;
+}
+
+function mostrarMensaje(texto, tipo) {
+  const el = $("mensaje");
+  el.textContent = texto;
+  el.className = "mensaje" + (tipo ? " " + tipo : "");
+}
+
+function renderTabla() {
+  const cuerpo = $("tabla-alumnos");
+  cuerpo.replaceChildren();
+  nombres.slice(0, totalAlumnos).forEach((nombre, i) => {
+    const prom = promedioAlumno(i);
+    const aprobado = prom >= NOTA_APROBACION;
+    const fila = document.createElement("tr");
+    fila.append(crear("td", nombre));
+    notas[i].forEach((n) => fila.append(crear("td", String(n), "num")));
+    fila.append(crear("td", fmt(prom), "num"));
+    const celdaEstado = document.createElement("td");
+    celdaEstado.append(
+      crear("span", aprobado ? "Aprobado" : "Reprobado", "estado " + (aprobado ? "aprobado" : "reprobado"))
+    );
+    fila.append(celdaEstado);
+    cuerpo.append(fila);
+  });
+}
+
+function renderResumen() {
+  const resumen = $("resumen");
+  resumen.replaceChildren();
+  const items = [
+    ...promediosCertificados().map((p, i) => [`Promedio del curso C${i + 1}`, fmt(p)]),
+    ["Promedio final del curso", fmt(promedioGeneral())],
+    ["Aprobados", String(contarAprobados())],
+    ["Reprobados", String(contarReprobados())],
+  ];
+  items.forEach(([etiqueta, valor]) => {
+    const bloque = document.createElement("div");
+    bloque.append(crear("dt", etiqueta), crear("dd", valor));
+    resumen.append(bloque);
+  });
+}
+
+function renderRanking() {
+  const lista = $("ranking-lista");
+  lista.replaceChildren();
+  ranking().forEach(({ nombre, promedio }) => {
+    const li = crear("li", nombre + " ");
+    li.append(crear("span", fmt(promedio), "prom"));
+    lista.append(li);
+  });
+}
+
+function renderContador() {
+  const lleno = totalAlumnos >= MAX_ALUMNOS;
+  $("contador").textContent = lleno
+    ? "Curso completo: ya registraste los 10 alumnos."
+    : `Alumnos registrados: ${totalAlumnos} de ${MAX_ALUMNOS}`;
+  $("btn-agregar").disabled = lleno;
+}
+
+function renderTodo() {
+  $("resultados").hidden = totalAlumnos === 0;
+  if (totalAlumnos > 0) {
+    renderTabla();
+    renderResumen();
+    renderRanking();
+  }
+  renderContador();
+}
+
+/* ---------- 5. Eventos ---------- */
+const campos = {
+  nombre: $("nombre"),
+  notas: [$("c1"), $("c2"), $("c3")],
+};
+
+function marcarInvalido(input, invalido) {
+  input.classList.toggle("invalido", invalido);
+  input.setAttribute("aria-invalid", String(invalido));
+}
+
+function agregarAlumno(evento) {
+  evento.preventDefault();
+
+  if (totalAlumnos >= MAX_ALUMNOS) {
+    mostrarMensaje("El curso ya tiene 10 alumnos.", "error");
+    return;
+  }
+
+  const entradas = [campos.nombre, ...campos.notas];
+  const resultados = [
+    validarNombre(campos.nombre.value),
+    ...campos.notas.map((input, i) => validarNota(input.value, i + 1)),
+  ];
+
+  entradas.forEach((input, i) => marcarInvalido(input, !resultados[i].ok));
+
+  const primerError = resultados.findIndex((r) => !r.ok);
+  if (primerError !== -1) {
+    mostrarMensaje(resultados[primerError].error, "error");
+    entradas[primerError].focus();
+    return;
+  }
+
+  nombres[totalAlumnos] = resultados[0].valor;
+  resultados.slice(1).forEach((r, c) => { notas[totalAlumnos][c] = r.valor; });
+  totalAlumnos++;
+
+  $("formulario").reset();
+  mostrarMensaje(`Se agregó a ${resultados[0].valor}.`, "ok");
+  renderTodo();
+  campos.nombre.focus();
+}
+
+function reiniciarCurso() {
+  if (totalAlumnos === 0) return;
+  if (!confirm("¿Borrar todos los alumnos y sus notas?")) return;
+  nombres.fill(null);
+  notas.forEach((fila) => fila.fill(null));
+  totalAlumnos = 0;
+  $("formulario").reset();
+  [campos.nombre, ...campos.notas].forEach((i) => marcarInvalido(i, false));
+  mostrarMensaje("Curso reiniciado.", "ok");
+  renderTodo();
+}
+
+$("formulario").addEventListener("submit", agregarAlumno);
+$("btn-reiniciar").addEventListener("click", reiniciarCurso);
+[campos.nombre, ...campos.notas].forEach((input) =>
+  input.addEventListener("input", () => marcarInvalido(input, false))
+);
+
+renderTodo();

@@ -49,6 +49,40 @@
         <p id="contador" class="contador"></p>
       </form>
     </section>
+    
+    <section id="resultados" class="resultados" aria-labelledby="titulo-res" hidden>
+      <h2 id="titulo-res" class="solo-lectores">Resultados</h2>
+
+      <div class="tarjeta">
+        <h3>Notas por alumno</h3>
+        <div class="tabla-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Alumno</th>
+                <th scope="col" class="num">C1</th>
+                <th scope="col" class="num">C2</th>
+                <th scope="col" class="num">C3</th>
+                <th scope="col" class="num">Promedio</th>
+                <th scope="col">Estado</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-alumnos"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tarjeta">
+        <h3>Resumen del curso</h3>
+        <dl class="resumen" id="resumen"></dl>
+      </div>
+
+      <div class="tarjeta" id="ranking">
+        <h3>Ranking por promedio</h3>
+        <ol class="ranking" id="ranking-lista"></ol>
+      </div>
+    </section>
   </main>
+    <script src="app.js"></script>
 </body>
 </html>
